@@ -1,0 +1,33 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate SKILL.md frontmatter
+        run: python scripts-ci/validate_skill.py talklick/SKILL.md
+
+      - name: Syntax-check every script
+        run: python -m compileall -q talklick/scripts
+
+      - name: Every script must respond to --help
+        env:
+          TLK_API_KEY: dummy
+        run: |
+          set -e
+          for f in talklick/scripts/*.py; do
+            name=$(basename "$f")
+            [ "$name" = "_client.py" ] && continue
+            python "$f" --help >/dev/null
+          done
